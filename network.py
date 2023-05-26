@@ -2,6 +2,7 @@ import socket
 
 NAME_LEN_SIZE = 4
 MSG_LEN_SIZE = 3
+SERVER_PORT = 5555
 
 ALL_CHAT_TYPE = 1
 MAKE_OWNER_TYPE = 2
@@ -10,6 +11,12 @@ MUTE_TYPE = 4
 PRIVATE_CHAT_TYPE = 5
 
 VIEW_ALL_COMMAND = "!viewall"
+
+
+def connect(ip: str, port: int) -> socket.socket:
+    sock = socket.socket()
+    sock.connect((ip, port))
+    return sock
 
 
 def send_message(sock: socket.socket, username: str, message_type: int, data: bytes):
