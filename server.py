@@ -3,6 +3,8 @@ import select
 import time
 
 
+from network import ALL_CHAT_TYPE, KICK_TYPE, MAKE_OWNER_TYPE, MSG_LEN_SIZE, MUTE_TYPE, NAME_LEN_SIZE, PRIVATE_CHAT_TYPE
+
 MAX_MSG_LENGTH = 1024
 SERVER_PORT = 5555
 SERVER_IP = "0.0.0.0"
@@ -14,16 +16,7 @@ MUTED = 2
 
 TIMEOUT_TIME = 0.05
 
-NAME_LEN_SIZE = 1
-MSG_LEN_SIZE = 3
-
 MSG_TYPE_LEN = 1
-
-ALL_CHAT_TYPE = "1"
-MAKE_OWNER_TYPE = "2"
-KICK_TYPE = "3"
-MUTE_TYPE = "4"
-PRIVATE_CHAT_TYPE = "5"
 
 CLIENT_SOCKET = 0
 CLIENT_MESSAGE_QUEUE = 1
@@ -151,7 +144,8 @@ def manage_new_clients():
     name: str
     if not non_named_sockets:
         return
-    rlist, wlist, xlist = select.select(non_named_sockets, [], [], TIMEOUT_TIME)
+    rlist, wlist, xlist = select.select(
+        non_named_sockets, [], [], TIMEOUT_TIME)
     for current_socket in rlist:
         name_len = current_socket.recv(NAME_LEN_SIZE).decode()
 
@@ -171,10 +165,12 @@ def manage_new_clients():
 def manage_clients():
     name_len: str
     name: str
-    msg_type: str
+    msg_type: int
+
     if not client_sockets:
         return
-    rlist, wlist, xlist = select.select(client_sockets, client_sockets, [], TIMEOUT_TIME)
+    rlist, wlist, xlist = select.select(
+        client_sockets, client_sockets, [], TIMEOUT_TIME)
     for current_socket in rlist:
         name_len = current_socket.recv(NAME_LEN_SIZE).decode()
 
@@ -185,7 +181,7 @@ def manage_clients():
 
         name = current_socket.recv(int(name_len)).decode()
 
-        msg_type = current_socket.recv(MSG_TYPE_LEN).decode()
+        msg_type = int(current_socket.recv(MSG_TYPE_LEN).decode())
         if not msg_type in MESSAGE_TYPES:
             print("wahgh")
             continue
@@ -207,7 +203,8 @@ def receive_new_connection(server_socket):
     while rlist:
         new_socket = server_socket.accept()[SOCKET_ACCEPT_SOCKET_ARG]
         non_named_sockets.add(new_socket)
-        rlist, wlist, xlist = select.select([server_socket], [], [], TIMEOUT_TIME)
+        rlist, wlist, xlist = select.select(
+            [server_socket], [], [], TIMEOUT_TIME)
 
 
 def manage_server(server_socket):
