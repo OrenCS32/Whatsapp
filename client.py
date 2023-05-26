@@ -4,7 +4,7 @@ import tkinter as tk
 import tkinter.messagebox as msgbox
 from typing import List, Optional
 
-from network import SERVER_PORT, connect, login, send_chat_message
+from network import SERVER_PORT, connect, login, send_chat_message, send_private_message
 from scrollable_frame import ScrollableFrame
 
 
@@ -60,6 +60,27 @@ def on_send_chat(client: socket.socket, username: str, message_var: tk.StringVar
     message_var.set("")
 
 
+def on_send_private(root: tk.Tk, client: socket.socket, username: str, message_var: tk.StringVar):
+    message = message_var.get()
+    message_var.set("")
+
+    modal = tk.Toplevel(root)
+    username_var = tk.StringVar()
+
+    def on_click():
+        if not username_var.get():
+            return
+        send_private_message(
+            client, username, username_var.get(), message)
+        modal.destroy()
+        modal.update()
+
+    tk.Label(modal, text='Username').grid()
+    tk.Entry(modal, textvariable=username_var).grid(row=0, column=1)
+    tk.Button(modal, text='Choose Target User',
+              command=on_click).grid(row=0, column=2)
+
+
 def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Optional[List[str]] = None):
     clear(root)
 
@@ -82,7 +103,9 @@ def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Opti
         client, username, message_var)
     ).grid(row=1, column=1)
     tk.Button(wrapper, text='Send Private',
-              command=lambda: ...).grid(row=1, column=2)
+              command=lambda: on_send_private(
+                  root, client, username, message_var)
+              ).grid(row=1, column=2)
 
     Thread(target=recv_thread, args=(root, client,
            username, messages), daemon=True).start()

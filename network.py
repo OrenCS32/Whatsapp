@@ -48,6 +48,6 @@ def send_private_message(sock: socket.socket, username: str, target: str, messag
     return send_message(
         sock,
         username,
-        KICK_TYPE,
+        PRIVATE_CHAT_TYPE,
         f"{str(len(target)).zfill(NAME_LEN_SIZE)}{target}{str(len(message)).zfill(MSG_LEN_SIZE)}{message}".encode()
     )
