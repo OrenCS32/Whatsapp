@@ -3,7 +3,7 @@ import select
 import time
 
 from network import ALL_CHAT_TYPE, KICK_TYPE, MAKE_OWNER_TYPE, MSG_LEN_SIZE, MUTE_TYPE, NAME_LEN_SIZE, \
-    PRIVATE_CHAT_TYPE, VIEW_ALL_TYPE, is_socket_closed
+    PRIVATE_CHAT_TYPE, is_socket_closed, VIEW_ALL_COMMAND
 
 MAX_MSG_LENGTH = 1024
 SERVER_PORT = 5555
@@ -39,6 +39,16 @@ def broadcast_message(msg):
         clients[name][CLIENT_MESSAGE_QUEUE].append(msg)
 
 
+def format_name(name):
+    if clients[name][CLIENT_STATUS] & MANAGER:
+        return MANAGER_PREFIX + name
+    return name
+
+
+def get_users() -> str:
+    return ', '.join(clients.keys())
+
+
 def general_message(name, sock):
     """ Send message to Every client """
     msg_len: str = sock.recv(MSG_LEN_SIZE).decode()
@@ -51,20 +61,17 @@ def general_message(name, sock):
 
     client_msg = sock.recv(int(msg_len)).decode()
 
-
-
     if clients[name][CLIENT_STATUS] & MUTED:
         print(f"{name} tried broadcasting {client_msg}")
         return
 
-    if clients[name][CLIENT_STATUS] & MANAGER:
-        name = MANAGER_PREFIX + name
-
-    output_msg = f"{name}: {client_msg}"
-
+    output_msg = f"{format_name(name)}: {client_msg}"
 
     print(output_msg)
     broadcast_message(output_msg)
+
+    if client_msg == VIEW_ALL_COMMAND:
+        broadcast_message(f"All users: {get_users()}")
 
 
 def private_message(name, sock):
@@ -89,12 +96,15 @@ def private_message(name, sock):
 
     client_msg = sock.recv(int(msg_len)).decode()
 
-    if clients[name][CLIENT_STATUS] & MANAGER:
-        name = MANAGER_PREFIX + name
+    if client_name not in clients:
+        print(f"{name} tried to contact unknown user {client_name}")
+        return
+
+    name = format_name(name)
 
     output_msg = f"!{name}: {client_msg}"
 
-    print(f"{name} -> {client_name}: {client_msg}")
+    print(f"{name} -> {format_name(client_name)}: {client_msg}")
     clients[client_name][CLIENT_MESSAGE_QUEUE].append(output_msg)
 
 
@@ -111,11 +121,17 @@ def make_owner(name, sock):
     owner_name = sock.recv(int(owner_name_len)).decode()
 
     if not (clients[name][CLIENT_STATUS] & MANAGER):
+        print(f"{name} tried to appoint {owner_name}, but he is not a manager")
         return
 
-    print(f"{name} appointed {owner_name}.")
+    if owner_name not in clients:
+        print(f"{name} tried to appoint unknown user {owner_name}")
+        return
+
+    output_msg = f"{format_name(name)} made {format_name(owner_name)} an owner."
+    print(output_msg)
+    broadcast_message(output_msg)
     clients[owner_name][CLIENT_STATUS] |= MANAGER
-    broadcast_message(f"{name} made {owner_name} an owner.")
 
 
 def mute_user(name, sock):
@@ -132,11 +148,17 @@ def mute_user(name, sock):
     client_name = sock.recv(int(client_name_len)).decode()
 
     if not (clients[name][CLIENT_STATUS] & MANAGER):
+        print(f"{name} tried to mute {client_name}, but he is not a manager")
+        return
+
+    if client_name not in clients:
+        print(f"{name} tried to mute unknown user {client_name}")
         return
 
     clients[client_name][CLIENT_STATUS] |= MUTED
-    print(f"{name} muted {client_name}.")
-    broadcast_message(f"{name} muted {client_name}.")
+    output_msg = f"{format_name(name)} muted {format_name(client_name)}."
+    print(output_msg)
+    broadcast_message(output_msg)
 
 
 def kick_user(name, sock):
@@ -153,6 +175,11 @@ def kick_user(name, sock):
     client_name = sock.recv(int(client_name_len)).decode()
 
     if not (clients[name][CLIENT_STATUS] & MANAGER):
+        print(f"{name} tried to kick {client_name}, but he is not a manager")
+        return
+
+    if client_name not in clients:
+        print(f"{name} tried to kick unknown user {client_name}")
         return
 
     """ Remove user """
@@ -162,19 +189,13 @@ def kick_user(name, sock):
     client_sockets.remove(client_socket)
     client_socket.close()
 
-    print(f"{name} kicked {client_name}.")
-    broadcast_message(f"{name} kicked {client_name}.")
-
-
-def view_all_users(name, sock):
-    all_clients = ', '.join(clients.keys())
-
-    clients[name][CLIENT_MESSAGE_QUEUE].append(f"All users: {all_clients}.")
+    output_msg = f"{format_name(name)} kicked {format_name(client_name)}."
+    print(output_msg)
+    broadcast_message(output_msg)
 
 
 MESSAGE_TYPES = {ALL_CHAT_TYPE: general_message, MAKE_OWNER_TYPE: make_owner,
-                 KICK_TYPE: kick_user, MUTE_TYPE: mute_user, PRIVATE_CHAT_TYPE: private_message,
-                 VIEW_ALL_TYPE: view_all_users}
+                 KICK_TYPE: kick_user, MUTE_TYPE: mute_user, PRIVATE_CHAT_TYPE: private_message}
 
 
 def add_user(sock: socket.socket):
@@ -182,12 +203,12 @@ def add_user(sock: socket.socket):
     name: str
     name_len = sock.recv(NAME_LEN_SIZE).decode()
 
-    if not name_len.isdigit():
+    if not name_len.isnumeric():
         non_named_sockets.remove(sock)
         sock.close()
         return
 
-    if name_len == '0':
+    if int(name_len) == 0:
         sock.send(USERNAME_EMPTY.encode())
         return
 
@@ -203,10 +224,13 @@ def add_user(sock: socket.socket):
         return
 
     non_named_sockets.remove(sock)
-
-    clients[name] = [sock, [], 0]
+    if name == "admin":
+        clients[name] = [sock, [], MANAGER]
+    else:
+        clients[name] = [sock, [], 0]
     socket_to_name[sock] = name
     client_sockets.add(sock)
+    sock.send(USERNAME_OKAY.encode())
 
     broadcast_message(f"{name} has joined the chat")
     print(f"Added {name}")
