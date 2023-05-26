@@ -17,6 +17,10 @@ def send_message(sock: socket.socket, username: str, message_type: int, data: by
     )
 
 
+def login(sock: socket.socket, username: str):
+    return send_message(sock, username, "", b"")  # type: ignore
+
+
 def send_chat_message(sock: socket.socket, username: str, message: str):
     return send_message(sock, username, ALL_CHAT_TYPE, f"{str(len(message)).zfill(MSG_LEN_SIZE)}{message}".encode())
 
