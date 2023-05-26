@@ -39,8 +39,6 @@ def general_message(name, sock):
     output_msg = f"{name}: {client_msg}"
 
     for client in clients.values():
-        if client[CLIENT_SOCKET] == sock:
-            continue
         client[CLIENT_MESSAGE_QUEUE].append(output_msg)
 
 
