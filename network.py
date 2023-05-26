@@ -15,6 +15,7 @@ def send_message(sock: socket.socket, username: str, message_type: int, data: by
     username_length = len(username)
     sock.send(
         f"{str(username_length).zfill(NAME_LEN_SIZE)}{username}{message_type}".encode() + data)
+    print(f"{str(username_length).zfill(NAME_LEN_SIZE)}{username}{message_type}".encode() + data)
 
 
 def login(sock: socket.socket, username: str):
@@ -43,7 +44,7 @@ def send_private_message(sock: socket.socket, username: str, target: str, messag
     return send_message(
         sock,
         username,
-        KICK_TYPE,
+        PRIVATE_CHAT_TYPE,
         f"{str(len(target)).zfill(NAME_LEN_SIZE)}{target}{str(len(message)).zfill(MSG_LEN_SIZE)}{message}".encode()
     )
 

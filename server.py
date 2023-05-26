@@ -51,11 +51,17 @@ def general_message(name, sock):
 
     client_msg = sock.recv(int(msg_len)).decode()
 
-    output_msg = f"{name}: {client_msg}"
+
 
     if clients[name][CLIENT_STATUS] & MUTED:
         print(f"{name} tried broadcasting {client_msg}")
         return
+
+    if clients[name][CLIENT_STATUS] & MANAGER:
+        name = MANAGER_PREFIX + name
+
+    output_msg = f"{name}: {client_msg}"
+
 
     print(output_msg)
     broadcast_message(output_msg)
@@ -83,6 +89,9 @@ def private_message(name, sock):
 
     client_msg = sock.recv(int(msg_len)).decode()
 
+    if clients[name][CLIENT_STATUS] & MANAGER:
+        name = MANAGER_PREFIX + name
+
     output_msg = f"!{name}: {client_msg}"
 
     print(f"{name} -> {client_name}: {client_msg}")
@@ -91,9 +100,6 @@ def private_message(name, sock):
 
 def make_owner(name, sock):
     """ Make a user an owner """
-    if not (clients[name][CLIENT_STATUS] & MANAGER):
-        return
-
     owner_name_len: str = sock.recv(NAME_LEN_SIZE).decode()
 
     if not owner_name_len.isnumeric():
@@ -104,14 +110,16 @@ def make_owner(name, sock):
 
     owner_name = sock.recv(int(owner_name_len)).decode()
 
+    if not (clients[name][CLIENT_STATUS] & MANAGER):
+        return
+
+    print(f"{name} appointed {owner_name}.")
     clients[owner_name][CLIENT_STATUS] |= MANAGER
     broadcast_message(f"{name} made {owner_name} an owner.")
 
 
 def mute_user(name, sock):
     """ Mute a user """
-    if not (clients[name][CLIENT_STATUS] & MANAGER):
-        return
 
     client_name_len: str = sock.recv(NAME_LEN_SIZE).decode()
 
@@ -122,6 +130,9 @@ def mute_user(name, sock):
         return
 
     client_name = sock.recv(int(client_name_len)).decode()
+
+    if not (clients[name][CLIENT_STATUS] & MANAGER):
+        return
 
     clients[client_name][CLIENT_STATUS] |= MUTED
     print(f"{name} muted {client_name}.")
@@ -130,8 +141,6 @@ def mute_user(name, sock):
 
 def kick_user(name, sock):
     """ Kick a user """
-    if not (clients[name][CLIENT_STATUS] & MANAGER):
-        return
 
     client_name_len: str = sock.recv(NAME_LEN_SIZE).decode()
 
@@ -142,6 +151,9 @@ def kick_user(name, sock):
         return
 
     client_name = sock.recv(int(client_name_len)).decode()
+
+    if not (clients[name][CLIENT_STATUS] & MANAGER):
+        return
 
     """ Remove user """
     client_socket = clients[client_name][CLIENT_SOCKET]
@@ -241,9 +253,6 @@ def handle_incoming_data(sock: socket.socket):
         print(f"Unknown name {name}")
         sock.recv(MAX_MSG_LENGTH)
         return
-
-    if clients[name][CLIENT_STATUS] & MANAGER:
-        name = MANAGER_PREFIX + name
 
     msg_type = int(sock.recv(MSG_TYPE_LEN).decode())
     if msg_type not in MESSAGE_TYPES:
