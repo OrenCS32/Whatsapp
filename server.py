@@ -179,13 +179,14 @@ def kick_user(name, sock):
         return
 
     """ Remove user """
+    output_msg = f"{format_name(name)} kicked {format_name(client_name)}."
+
     client_socket = clients[client_name][CLIENT_SOCKET]
     clients.pop(client_name)
     socket_to_name.pop(client_socket)
     client_sockets.remove(client_socket)
     client_socket.close()
 
-    output_msg = f"{format_name(name)} kicked {format_name(client_name)}."
     print(output_msg)
     broadcast_message(output_msg)
 
@@ -302,10 +303,6 @@ def send_data(sock: socket.socket):
 
 def manage_clients():
     """ Manages all named clients """
-    name_len: str
-    name: str
-    msg_type: int
-
     if not client_sockets:
         return
 

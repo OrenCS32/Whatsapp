@@ -4,7 +4,7 @@ import tkinter as tk
 import tkinter.messagebox as msgbox
 from typing import Callable, List, Optional
 
-from network import SERVER_PORT, USERNAME_OKAY, appoint_owner, connect, login, recv_raw_data, send_chat_message, send_mute_user, send_private_message
+from network import SERVER_PORT, USERNAME_OKAY, appoint_owner, connect, login, recv_raw_data, send_chat_message, send_kick_user, send_mute_user, send_private_message
 from scrollable_frame import ScrollableFrame
 
 
@@ -57,13 +57,18 @@ def login_page(root: tk.Tk):
 
 def recv_thread(root: tk.Tk, client: socket.socket, username: str, messages: List[str]):
     message = client.recv(1024).decode()
+    if not message:
+        client.close()
+        return
     main_page(root, client, username, [*messages, message])
-    exit(0)
 
 
 def on_send_chat(client: socket.socket, username: str, message_var: tk.StringVar):
-    send_chat_message(client, username, message_var.get())
-    message_var.set("")
+    try:
+        send_chat_message(client, username, message_var.get())
+        message_var.set("")
+    except OSError:
+        exit()
 
 
 def get_user(root: tk.Tk, on_username: Callable[[str], None]):
@@ -87,22 +92,34 @@ def on_send_private(root: tk.Tk, client: socket.socket, username: str, message_v
     message = message_var.get()
     message_var.set("")
 
-    get_user(root,
-             lambda target: send_private_message(
-                 client, username, target, message)
-             )
+    try:
+        get_user(root,
+                 lambda target: send_private_message(
+                     client, username, target, message)
+                 )
+    except OSError:
+        exit()
 
 
 def on_mute(root: tk.Tk, client: socket.socket, username: str):
-    get_user(root, lambda target: send_mute_user(client, username, target))
+    try:
+        get_user(root, lambda target: send_mute_user(client, username, target))
+    except OSError:
+        exit()
 
 
 def on_appoint_owner(root: tk.Tk, client: socket.socket, username: str):
-    get_user(root, lambda target: appoint_owner(client, username, target))
+    try:
+        get_user(root, lambda target: appoint_owner(client, username, target))
+    except OSError:
+        exit()
 
 
 def on_kick(root: tk.Tk, client: socket.socket, username: str):
-    get_user(root, lambda target: appoint_owner(client, username, target))
+    try:
+        get_user(root, lambda target: send_kick_user(client, username, target))
+    except OSError:
+        exit()
 
 
 def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Optional[List[str]] = None):
