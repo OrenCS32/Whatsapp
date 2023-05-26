@@ -1,4 +1,5 @@
 import socket
+from threading import Thread
 import tkinter as tk
 import tkinter.messagebox as msgbox
 from typing import List, Optional
@@ -26,8 +27,7 @@ def on_login(root: tk.Tk, ip: str, port: int, username: str):
         client = connect(ip, port)
         login(client, username)
         root.title(username)
-        main_page(root, client, username, ["hello", "asda",
-                  "asdads", "asdzxcz", "asdwe", "axczdsfgds"])
+        main_page(root, client, username)
     except ConnectionError:
         msgbox.showerror(title="Error", message="Could not connect to server")
 
@@ -47,6 +47,12 @@ def login_page(root: tk.Tk):
     tk.Entry(root, textvariable=username_var).grid(column=1, row=2)
     tk.Button(root, text='Connect', command=lambda: on_login(root, ip_var.get(), port_var.get(), username_var.get())).grid(
         row=3, columnspan=2)
+
+
+def recv_thread(root: tk.Tk, client: socket.socket, username: str, messages: List[str]):
+    message = client.recv(1024).decode()
+    main_page(root, client, username, [*messages, message])
+    exit(0)
 
 
 def on_send_chat(client: socket.socket, username: str, message_var: tk.StringVar):
@@ -69,7 +75,7 @@ def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Opti
     frame.grid(columnspan=3)
     for message in messages:
         tk.Label(frame.scrollable_frame, text=message,
-                 bg="white", anchor="w").pack()
+                 bg="white", anchor="w", width=550).pack()
     tk.Entry(wrapper, textvariable=message_var).grid(
         row=1, column=0, sticky="ew")
     tk.Button(wrapper, text='Send', command=lambda: on_send_chat(
@@ -77,6 +83,9 @@ def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Opti
     ).grid(row=1, column=1)
     tk.Button(wrapper, text='Send Private',
               command=lambda: ...).grid(row=1, column=2)
+
+    Thread(target=recv_thread, args=(root, client,
+           username, messages), daemon=True).start()
 
 
 def main():
