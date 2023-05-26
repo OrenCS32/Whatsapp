@@ -206,6 +206,8 @@ def add_user(sock: socket.socket):
 
     if int(name_len) == 0:
         send_raw_data(sock, USERNAME_EMPTY.encode())
+        non_named_sockets.remove(sock)
+        sock.close()
         return
 
     """ Add the user """
@@ -213,10 +215,14 @@ def add_user(sock: socket.socket):
 
     if name in clients:
         send_raw_data(sock, USERNAME_TAKEN.encode())
+        non_named_sockets.remove(sock)
+        sock.close()
         return
 
     if name[0] == MANAGER_PREFIX:
         send_raw_data(sock, USERNAME_MANAGER.encode())
+        non_named_sockets.remove(sock)
+        sock.close()
         return
 
     non_named_sockets.remove(sock)
