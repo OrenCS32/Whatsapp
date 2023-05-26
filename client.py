@@ -2,9 +2,9 @@ import socket
 from threading import Thread
 import tkinter as tk
 import tkinter.messagebox as msgbox
-from typing import List, Optional
+from typing import Callable, List, Optional
 
-from network import SERVER_PORT, connect, login, send_chat_message, send_private_message
+from network import SERVER_PORT, appoint_owner, connect, login, send_chat_message, send_mute_user, send_private_message
 from scrollable_frame import ScrollableFrame
 
 
@@ -60,18 +60,14 @@ def on_send_chat(client: socket.socket, username: str, message_var: tk.StringVar
     message_var.set("")
 
 
-def on_send_private(root: tk.Tk, client: socket.socket, username: str, message_var: tk.StringVar):
-    message = message_var.get()
-    message_var.set("")
-
+def get_user(root: tk.Tk, on_username: Callable[[str], None]):
     modal = tk.Toplevel(root)
     username_var = tk.StringVar()
 
     def on_click():
         if not username_var.get():
             return
-        send_private_message(
-            client, username, username_var.get(), message)
+        on_username(username_var.get())
         modal.destroy()
         modal.update()
 
@@ -79,6 +75,28 @@ def on_send_private(root: tk.Tk, client: socket.socket, username: str, message_v
     tk.Entry(modal, textvariable=username_var).grid(row=0, column=1)
     tk.Button(modal, text='Choose Target User',
               command=on_click).grid(row=0, column=2)
+
+
+def on_send_private(root: tk.Tk, client: socket.socket, username: str, message_var: tk.StringVar):
+    message = message_var.get()
+    message_var.set("")
+
+    get_user(root,
+             lambda target: send_private_message(
+                 client, username, target, message)
+             )
+
+
+def on_mute(root: tk.Tk, client: socket.socket, username: str):
+    get_user(root, lambda target: send_mute_user(client, username, target))
+
+
+def on_appoint_owner(root: tk.Tk, client: socket.socket, username: str):
+    get_user(root, lambda target: appoint_owner(client, username, target))
+
+
+def on_kick(root: tk.Tk, client: socket.socket, username: str):
+    get_user(root, lambda target: appoint_owner(client, username, target))
 
 
 def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Optional[List[str]] = None):
@@ -106,6 +124,16 @@ def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Opti
               command=lambda: on_send_private(
                   root, client, username, message_var)
               ).grid(row=1, column=2)
+
+    tk.Button(wrapper, text='Mute', command=lambda: on_mute(
+        root, client, username)
+    ).grid(row=2, column=0)
+    tk.Button(wrapper, text='Appoint manager', command=lambda: on_appoint_owner(
+        root, client, username)
+    ).grid(row=2, column=1)
+    tk.Button(wrapper, text='Kick', command=lambda: on_kick(
+        root, client, username)
+    ).grid(row=2, column=2)
 
     Thread(target=recv_thread, args=(root, client,
            username, messages), daemon=True).start()
