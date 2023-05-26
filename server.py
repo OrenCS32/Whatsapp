@@ -1,5 +1,7 @@
 import socket
 import select
+import time
+
 
 MAX_MSG_LENGTH = 1024
 SERVER_PORT = 5555
@@ -34,6 +36,7 @@ non_named_sockets = set()
 
 
 def general_message(name, sock):
+    """ Send message to Every client """
     msg_len: str = sock.recv(MSG_LEN_SIZE).decode()
 
     if not msg_len.isnumeric():
@@ -44,6 +47,9 @@ def general_message(name, sock):
 
     client_msg = sock.recv(int(msg_len)).decode()
 
+    if clients[name][CLIENT_STATUS] & MUTED:
+        return
+
     output_msg = f"{name}: {client_msg}"
 
     for client in clients.values():
@@ -53,6 +59,7 @@ def general_message(name, sock):
 
 
 def private_message(name, sock):
+    """ Send message to a specific client """
     name_len: str = sock.recv(NAME_LEN_SIZE).decode()
 
     if not name_len.isdigit():
@@ -79,6 +86,7 @@ def private_message(name, sock):
 
 
 def make_owner(name, sock):
+    """ Make a user an owner """
     if not (clients[name][CLIENT_STATUS] & MANAGER):
         return
 
@@ -96,6 +104,7 @@ def make_owner(name, sock):
 
 
 def mute_user(name, sock):
+    """ Mute a user """
     if not (clients[name][CLIENT_STATUS] & MANAGER):
         return
 
@@ -113,6 +122,7 @@ def mute_user(name, sock):
 
 
 def kick_user(name, sock):
+    """ Kick a user """
     if not (clients[name][CLIENT_STATUS] & MANAGER):
         return
 
@@ -185,7 +195,9 @@ def manage_clients():
     for current_socket in wlist:
         name = socket_to_name[current_socket]
         for msg in clients[name][CLIENT_MESSAGE_QUEUE]:
-            current_socket.send(msg.encode())
+            output = f"{time.asctime()} {msg}"
+            msg_len = str(len(output)).rjust(MSG_LEN_SIZE, '0')
+            current_socket.send(f"{msg_len}{output}")
 
         clients[name][CLIENT_MESSAGE_QUEUE].clear()
 
