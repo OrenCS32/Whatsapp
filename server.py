@@ -3,7 +3,7 @@ import select
 import time
 
 from network import ALL_CHAT_TYPE, KICK_TYPE, MAKE_OWNER_TYPE, MSG_LEN_SIZE, MUTE_TYPE, NAME_LEN_SIZE, \
-    PRIVATE_CHAT_TYPE, is_socket_closed
+    PRIVATE_CHAT_TYPE, VIEW_ALL_TYPE, is_socket_closed
 
 MAX_MSG_LENGTH = 1024
 SERVER_PORT = 5555
@@ -154,8 +154,15 @@ def kick_user(name, sock):
     broadcast_message(f"{name} kicked {client_name}.")
 
 
+def view_all_users(name, sock):
+    all_clients = ', '.join(clients.keys())
+
+    clients[name][CLIENT_MESSAGE_QUEUE].append(f"All users: {all_clients}.")
+
+
 MESSAGE_TYPES = {ALL_CHAT_TYPE: general_message, MAKE_OWNER_TYPE: make_owner,
-                 KICK_TYPE: kick_user, MUTE_TYPE: mute_user, PRIVATE_CHAT_TYPE: private_message}
+                 KICK_TYPE: kick_user, MUTE_TYPE: mute_user, PRIVATE_CHAT_TYPE: private_message,
+                 VIEW_ALL_TYPE: view_all_users}
 
 
 def add_user(sock: socket.socket):

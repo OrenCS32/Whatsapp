@@ -8,6 +8,7 @@ MAKE_OWNER_TYPE = 2
 KICK_TYPE = 3
 MUTE_TYPE = 4
 PRIVATE_CHAT_TYPE = 5
+VIEW_ALL_TYPE = 6
 
 
 def send_message(sock: socket.socket, username: str, message_type: int, data: bytes):
