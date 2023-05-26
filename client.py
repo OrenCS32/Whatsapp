@@ -109,7 +109,7 @@ def main_page(root: tk.Tk, client: socket.socket, username: str,  messages: Opti
     message_var = tk.StringVar()
 
     wrapper = tk.Frame()
-    wrapper.place(relx=0.25)
+    wrapper.place(relx=0.1)
     frame = ScrollableFrame(wrapper)
     frame.grid(columnspan=3)
     for message in messages:
