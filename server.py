@@ -3,7 +3,7 @@ import select
 import time
 
 from network import ALL_CHAT_TYPE, KICK_TYPE, MAKE_OWNER_TYPE, MSG_LEN_SIZE, MUTE_TYPE, NAME_LEN_SIZE, \
-    PRIVATE_CHAT_TYPE, is_socket_closed, VIEW_ALL_COMMAND
+    PRIVATE_CHAT_TYPE, SERVER_PORT, is_socket_closed, VIEW_ALL_COMMAND
 
 MAX_MSG_LENGTH = 1024
 SERVER_IP = "0.0.0.0"
