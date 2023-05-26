@@ -3,16 +3,13 @@ import select
 import time
 
 from network import ALL_CHAT_TYPE, KICK_TYPE, MAKE_OWNER_TYPE, MSG_LEN_SIZE, MUTE_TYPE, NAME_LEN_SIZE, \
-    PRIVATE_CHAT_TYPE, SERVER_PORT, is_socket_closed, VIEW_ALL_COMMAND
+    PRIVATE_CHAT_TYPE, SERVER_PORT, USERNAME_EMPTY, USERNAME_MANAGER, USERNAME_OKAY, USERNAME_TAKEN, is_socket_closed, VIEW_ALL_COMMAND, send_message, send_raw_data
 
 MAX_MSG_LENGTH = 1024
 SERVER_IP = "0.0.0.0"
 
 MANAGER_PREFIX = '@'
-USERNAME_TAKEN = "used"
-USERNAME_OKAY = "okay"
-USERNAME_EMPTY = "empt"
-USERNAME_MANAGER = "nota"
+
 
 SOCKET_ACCEPT_SOCKET_ARG = 0
 
@@ -208,18 +205,18 @@ def add_user(sock: socket.socket):
         return
 
     if int(name_len) == 0:
-        sock.send(USERNAME_EMPTY.encode())
+        send_raw_data(sock, USERNAME_EMPTY.encode())
         return
 
     """ Add the user """
     name = sock.recv(int(name_len)).decode()
 
     if name in clients:
-        sock.send(USERNAME_TAKEN.encode())
+        send_raw_data(sock, USERNAME_TAKEN.encode())
         return
 
     if name[0] == MANAGER_PREFIX:
-        sock.send(USERNAME_MANAGER.encode())
+        send_raw_data(sock, USERNAME_MANAGER.encode())
         return
 
     non_named_sockets.remove(sock)
@@ -229,7 +226,8 @@ def add_user(sock: socket.socket):
         clients[name] = [sock, [], 0]
     socket_to_name[sock] = name
     client_sockets.add(sock)
-    sock.send(USERNAME_OKAY.encode())
+
+    send_raw_data(sock, USERNAME_OKAY.encode())
 
     broadcast_message(f"{name} has joined the chat")
     print(f"Added {name}")

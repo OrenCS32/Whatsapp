@@ -4,7 +4,7 @@ import tkinter as tk
 import tkinter.messagebox as msgbox
 from typing import Callable, List, Optional
 
-from network import SERVER_PORT, appoint_owner, connect, login, send_chat_message, send_mute_user, send_private_message
+from network import SERVER_PORT, USERNAME_OKAY, appoint_owner, connect, login, recv_raw_data, send_chat_message, send_mute_user, send_private_message
 from scrollable_frame import ScrollableFrame
 
 
@@ -26,6 +26,12 @@ def on_login(root: tk.Tk, ip: str, port: int, username: str):
     try:
         client = connect(ip, port)
         login(client, username)
+        result = recv_raw_data(client)
+
+        if result.decode() != USERNAME_OKAY:
+            client.close()
+            return msgbox.showerror(title="Error", message=result.decode())
+
         root.title(username)
         main_page(root, client, username)
     except ConnectionError:

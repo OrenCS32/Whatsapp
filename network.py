@@ -10,6 +10,11 @@ KICK_TYPE = 3
 MUTE_TYPE = 4
 PRIVATE_CHAT_TYPE = 5
 
+USERNAME_TAKEN = "Username is already taken"
+USERNAME_OKAY = "okay"
+USERNAME_EMPTY = "Username cannot be empty"
+USERNAME_MANAGER = "Username cannot start with '@'"
+
 VIEW_ALL_COMMAND = "!viewall"
 
 
@@ -17,6 +22,15 @@ def connect(ip: str, port: int) -> socket.socket:
     sock = socket.socket()
     sock.connect((ip, port))
     return sock
+
+
+def send_raw_data(sock: socket.socket, data: bytes):
+    sock.send(str(len(data)).zfill(NAME_LEN_SIZE).encode() + data)
+
+
+def recv_raw_data(sock: socket.socket) -> bytes:
+    length = int(sock.recv(NAME_LEN_SIZE))
+    return sock.recv(length)
 
 
 def send_message(sock: socket.socket, username: str, message_type: int, data: bytes):
