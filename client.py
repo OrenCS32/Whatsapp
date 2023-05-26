@@ -1,15 +1,25 @@
 import socket
+import tkinter as tk
 
 from network import login, send_chat_message
 
-client = socket.socket()
 
-client.connect(("127.0.0.1", 5555))
+def get_root() -> tk.Tk:
+    root = tk.Tk()
 
-username = input("username: ")
-login(client, username)
+    return root
 
-send_chat_message(client, username, "hello there")
 
-while True:
-    print(client.recv(1024))
+def clear(root: tk.Tk):
+    for widget in root.winfo_children():
+        widget.destroy()
+
+
+def main():
+    root = get_root()
+    clear(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
