@@ -28,8 +28,8 @@ def send_raw_data(sock: socket.socket, data: bytes):
     sock.send(str(len(data)).zfill(NAME_LEN_SIZE).encode() + data)
 
 
-def recv_raw_data(sock: socket.socket) -> bytes:
-    length = int(sock.recv(NAME_LEN_SIZE))
+def recv_raw_data(sock: socket.socket, length_size: int = NAME_LEN_SIZE) -> bytes:
+    length = int(sock.recv(length_size))
     return sock.recv(length)
 
 

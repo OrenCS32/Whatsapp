@@ -56,7 +56,7 @@ def login_page(root: tk.Tk):
 
 
 def recv_thread(root: tk.Tk, client: socket.socket, username: str, messages: List[str]):
-    message = client.recv(1024).decode()
+    message = recv_raw_data(client, 3).decode()
     if not message:
         client.close()
         return
